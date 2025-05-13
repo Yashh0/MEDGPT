@@ -103,12 +103,29 @@ try:
             os.makedirs(persist_directory)
             st.success("Directory created!")
     
-    # Load the vector store
-    vector_store = Chroma(
-        persist_directory=persist_directory,
-        embedding_function=embeddings
-    )
-    retriever = vector_store.as_retriever(search_kwargs={'k': 1})
+    # Initialize vector store with error handling
+    try:
+        vector_store = Chroma(
+            persist_directory=persist_directory,
+            embedding_function=embeddings
+        )
+        retriever = vector_store.as_retriever(search_kwargs={'k': 1})
+    except Exception as e:
+        st.error(f"Error initializing vector store: {str(e)}")
+        st.info("Creating a new vector store...")
+        try:
+            # Create directory if it doesn't exist
+            os.makedirs(persist_directory, exist_ok=True)
+            # Initialize empty vector store
+            vector_store = Chroma(
+                persist_directory=persist_directory,
+                embedding_function=embeddings
+            )
+            retriever = vector_store.as_retriever(search_kwargs={'k': 1})
+            st.success("Vector store initialized successfully!")
+        except Exception as e:
+            st.error(f"Failed to create vector store: {str(e)}")
+            st.stop()
     
     # Initialize Groq client
     client = Groq(api_key=api_key)
@@ -124,9 +141,15 @@ try:
 
     def query_with_groq(query, retriever):
         try:
-            # Retrieve relevant documents
-            docs = retriever.get_relevant_documents(query)
-            context = "\n".join([doc.page_content for doc in docs])
+            # Retrieve relevant documents with error handling
+            try:
+                docs = retriever.get_relevant_documents(query)
+                if not docs:
+                    return "I apologize, but I couldn't find any relevant medical information in my knowledge base to answer your question accurately. Please try rephrasing your question or ask something else."
+                context = "\n".join([doc.page_content for doc in docs])
+            except Exception as e:
+                st.error(f"Error retrieving documents: {str(e)}")
+                return "I encountered an error while searching the medical knowledge base. Please try again or rephrase your question."
 
             # Call the Groq API with the query and context
             completion = client.chat.completions.create(
