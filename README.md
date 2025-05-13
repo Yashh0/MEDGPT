@@ -18,8 +18,13 @@ A powerful medical knowledge assistant powered by Groq's LLama3-70B model and St
    pip install -r requirements.txt
    ```
 3. Set up your Groq API key:
-   - Create a `.env` file in the root directory
-   - Add your API key: `GROQ_API_KEY=your_api_key_here`
+   - Create a `.streamlit/secrets.toml` file
+   - Add your API key:
+     ```toml
+     [api_keys]
+     groq = "your-api-key-here"
+     ```
+   - This file is gitignored for security
 
 ## Local Development
 
@@ -35,7 +40,14 @@ streamlit run app.py
 1. Push your code to GitHub
 2. Visit [share.streamlit.io](https://share.streamlit.io)
 3. Connect your GitHub repository
-4. Add your Groq API key in the Streamlit Cloud secrets management
+4. Set up your API key in Streamlit Cloud:
+   - Go to your app settings
+   - Find the "Secrets" section
+   - Add your API key in this format:
+     ```toml
+     [api_keys]
+     groq = "your-api-key-here"
+     ```
 5. Deploy!
 
 ### Environment Variables

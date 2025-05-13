@@ -47,11 +47,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Load API key from environment
-load_dotenv()
-api_key = os.getenv("GROQ_API_KEY")
-if not api_key:
-    st.error("API key not found. Please set the GROQ_API_KEY environment variable.")
+# Load API key from Streamlit secrets
+try:
+    api_key = st.secrets.api_keys.groq
+except Exception:
+    st.error("""🔑 API key not found! 
+
+To run this app:
+
+1. For local development:
+   - Create `.streamlit/secrets.toml`
+   - Add your API key:
+     ```toml
+     [api_keys]
+     groq = "your-api-key-here"
+     ```
+
+2. For Streamlit Cloud:
+   - Go to your app settings
+   - Add your API key in the secrets section using the same format
+    """)
     st.stop()
 
 # Initialize session state for chat history

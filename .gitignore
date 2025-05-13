@@ -25,8 +25,9 @@ venv/
 MedGPT/
 ENV/
 
-# Environment variables
+# Environment variables and secrets
 .env
+.streamlit/secrets.toml
 
 # IDE
 .idea/
