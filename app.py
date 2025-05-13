@@ -5,66 +5,94 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from groq import Groq
 from dotenv import load_dotenv
 import time
+from datetime import datetime
 
 # Initialize Streamlit page configuration
 st.set_page_config(
     page_title="MedGPT - Medical Knowledge Assistant",
     page_icon="🏥",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
+# Custom CSS for ChatGPT-like interface
 st.markdown("""
 <style>
-    .main {padding: 2rem}
-    .stTextInput {max-width: 800px}
-    .stButton>button {background-color: #FF4B4B; color: white}
-    .stButton>button:hover {background-color: #FF6B6B}
-    .css-1y4p8pa {max-width: 800px}
-    .st-emotion-cache-1y4p8pa {max-width: 800px}
+    .main {padding: 1rem; max-width: 800px; margin: 0 auto;}
+    
+    /* Chat container */
+    .chat-container {max-width: 800px; margin: 0 auto;}
+    
+    /* Message styling */
+    .user-message {background-color: #f7f7f8; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;}
+    .assistant-message {background-color: white; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;}
+    
+    /* Input area */
+    .stTextInput {margin-bottom: 1rem;}
+    .stTextInput>div>div>input {border-radius: 0.5rem; padding: 0.75rem;}
+    
+    /* Send button */
+    .stButton>button {border-radius: 0.5rem; padding: 0.5rem 1rem;}
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Timestamp */
+    .timestamp {color: #666; font-size: 0.8rem; margin-top: 0.25rem;}
+    
+    /* Avatar */
+    .avatar {font-size: 1.5rem; margin-right: 0.5rem;}
+    .message-header {display: flex; align-items: center; margin-bottom: 0.5rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar configuration
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/medical-doctor.png", width=100)
-    st.header("🔑 API Configuration")
-    
-    api_key = st.text_input("Enter your Groq API Key:", type="password", help="Get your API key from Groq's website")
-    if api_key:
-        os.environ['GROQ_API_KEY'] = api_key
-        st.success("✅ API Key set successfully!")
-    else:
-        # Try loading from .env file
-        load_dotenv()
-        api_key = os.getenv("GROQ_API_KEY")
-        if api_key:
-            st.success("✅ API Key loaded from .env file")
-    
-    st.markdown("---")
-    st.markdown("### About")
-    st.markdown("""
-    MedGPT is your intelligent medical knowledge assistant.
-    Ask any medical question and get detailed, accurate information from trusted sources.
-    
-    **Features:**
-    - Comprehensive medical information
-    - Evidence-based responses
-    - Structured explanations
-    """)
-
-# Check for API key before proceeding
+# Load API key from environment
+load_dotenv()
+api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
-    st.warning("Please enter your Groq API key in the sidebar to continue.")
+    st.error("API key not found. Please set the GROQ_API_KEY environment variable.")
     st.stop()
 
-# Main app content
-st.title("🏥 MedGPT - Medical Knowledge Assistant")
-st.markdown("""<div style='margin-bottom: 2rem'>
-Your intelligent companion for medical knowledge and information. 
-Ask any medical question to get comprehensive, evidence-based answers.
-</div>""", unsafe_allow_html=True)
+# Initialize session state for chat history
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+
+# Display header
+st.markdown('<h1 style="text-align: center; margin-bottom: 2rem;">🏥 MedGPT</h1>', unsafe_allow_html=True)
+
+# Display chat messages
+for message in st.session_state.messages:
+    role = message["role"]
+    content = message["content"]
+    timestamp = message.get("timestamp", "")
+    
+    if role == "user":
+        st.markdown(f"""
+        <div class="user-message">
+            <div class="message-header">
+                <span class="avatar">👤</span>
+                <strong>You</strong>
+            </div>
+            {content}
+            <div class="timestamp">{timestamp}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="assistant-message">
+            <div class="message-header">
+                <span class="avatar">🏥</span>
+                <strong>MedGPT</strong>
+            </div>
+            {content}
+            <div class="timestamp">{timestamp}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+
+
 
 try:
     # Set up the embeddings
@@ -204,29 +232,6 @@ try:
         except Exception as e:
             st.error(f"Error during query processing: {str(e)}")
             return None
-
-    col1, col2 = st.columns([1, 6])
-    with col1:
-        if st.button("🔍 Search", use_container_width=True):
-            if query:
-                with st.spinner("🔄 Analyzing medical literature..."):
-                    try:
-                        answer = query_with_groq(query, retriever)
-                        
-                        # Display answer in a nice format
-                        st.markdown("### Medical Information")
-                        st.markdown("<div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px;'>", unsafe_allow_html=True)
-                        st.markdown(answer)
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        # Add timestamp
-                        st.caption(f"Generated on {time.strftime('%Y-%m-%d %H:%M:%S')}")
-                    except Exception as e:
-                        st.error(f"An error occurred: {str(e)}. Please try again.")
-                if answer:
-                    st.success("Query processed successfully!")
-        else:
-            st.warning("Please enter a query.")
 
 except Exception as e:
     st.error(f"Initialization error: {str(e)}")
